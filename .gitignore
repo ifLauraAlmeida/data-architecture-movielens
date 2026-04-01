@@ -1,0 +1,13 @@
+# Chaves de Autenticação 
+*.json
+
+# Banco de Dados local do Metabase
+*.db
+*.trace.db
+
+# Arquivos de Sistema e IDEs
+.env
+.vscode/
+.idea/
+__pycache__/
+*.log
