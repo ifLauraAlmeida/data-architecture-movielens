@@ -68,7 +68,7 @@ Segurança no Cast: Mantivemos o SAFE_CAST para garantir que se algum dado vier 
 
 Abaixo estão as representações visuais da camada Gold consumida pelo Metabase:
 
-![](dashboard/screenshots/dashboard01.png)
+![](dashboard/screenshots/dashboard03.png)
 ![](dashboard/screenshots/dashboard02.png)
 
 ### 1. Visão Geral de Performance e Popularidade
