@@ -48,23 +48,39 @@ A análise resultou em indicadores críticos para a compreensão do ecossistema 
 * **Performance de Catálogo:** Distinção entre títulos de alta popularidade e alta qualidade (Ex: *Shawshank Redemption* com 10.8k avaliações)[cite: 17, 45].
 * **Segmentação de Nicho:** O gênero *Noir* apresenta as maiores médias de avaliação, apesar do menor volume de interações[cite: 35].
 
+## Reajuste na limpeza de avaliações -1.0
+
+### Lógica de Limpeza de Dados (ETL)
+
+As métricas do dashboard foram atualizadas para refletir apenas avaliações válidas. Registros com rating = -1 ou valores NULL foram removidos da camada de visualização para evitar distorções na média aritmética e na contagem total de interações.
+![](dashboard/screenshots/reajustesql.png)
+
+O que mudou e por que:
+
+Uso de CTE (WITH): Deixa o código mais limpo. Primeiro unimos tudo, depois aplicamos a lógica de limpeza uma única vez no final.
+
+Filtro WHERE em vez de NULLIF: Agora, se um filme tem o rating -1.0, a linha inteira é ignorada. Isso evita que o seu Metabase diga que você tem "1 milhão de avaliações" quando, na verdade, 20% delas são lixo.
+
+Segurança no Cast: Mantivemos o SAFE_CAST para garantir que se algum dado vier com texto onde deveria ser número, a query não quebre (ela apenas gera um NULL que o filtro limpa).
+
+
 ## 🖼️ Visualização (Dashboard)
+
+Abaixo estão as representações visuais da camada Gold consumida pelo Metabase:
 
 ![](dashboard/screenshots/dashboard01.png)
 ![](dashboard/screenshots/dashboard02.png)
 
-Abaixo estão as representações visuais da camada Gold consumida pelo Metabase:
-
 ### 1. Visão Geral de Performance e Popularidade
-> **[INSERIR PRINT 01 AQUI: Dashboard principal ou gráfico de barras dos Top 10 filmes]**
+>![](dashboard/screenshots/top10.png)
 *Análise de volume de interações vs. popularidade dos títulos.*
 
 ### 2. Matriz de Valor e Engajamento por Gênero
-> **[INSERIR PRINT 02 AQUI: Scatter plot ou Bubble chart de Gêneros]**
+>![](dashboard/screenshots/enggenero.png)
 *Correlação entre a média de avaliação e a quantidade de interações por categoria.*
 
 ### 3. Análise Térmica (Heatmap)
-> **[INSERIR PRINT 03 AQUI: Heatmap de horários e dias da semana]**
+>![](dashboard/screenshots/heatmap.png)
 *Mapeamento da "Janela de Ouro" para recomendações e marketing.*
 
 ## 🚀 Como Replicar este Projeto
@@ -84,9 +100,32 @@ Abaixo estão as representações visuais da camada Gold consumida pelo Metabase
 2. Execute o script em `data_modeling/gold/create_analytics_views.sql` para criar as views de consumo.
 
 ### Passo 3: Visualização (Metabase)
-1. Navegue até a pasta `/infrastructure`.
-2. Configure um arquivo `.env` com o caminho da sua chave JSON do GCP: `GCP_KEY_PATH=/seu/caminho/chave.json`.
-3. Inicie o container:
-   ```bash
-   docker-compose up -d
-4. Acesse localhost:3000, conecte o BigQuery utilizando sua chave JSON e aponte para as Views da camada Gold.
+
+Para garantir que o Dashboard carregue corretamente com todas as perguntas e configurações salvas, siga os passos abaixo:
+
+1. Permissões de Diretório: O Metabase no Docker utiliza um usuário interno (UID 2000). Ajuste a posse da pasta de backup para evitar erros de escrita:
+
+```
+Bash
+
+sudo chown -R 2000:2000 ./infrastructure/backup_metabase
+```
+
+2. Inicialização do Container: No Fedora (ou sistemas com SELinux), é necessário utilizar o sufixo :Z no volume para permitir o acesso do Docker aos arquivos locais. 
+
+Execute:
+
+```
+Bash
+
+docker run -d -p 3000:3000 \
+-v "$(pwd)/infrastructure/backup_metabase:/metabase-data:Z" \
+-e "MB_DB_FILE=/metabase-data/metabase.db" \
+--name metabase metabase/metabase
+```
+
+3. Acesso e Conexão: - Acesse http://localhost:3000.
+
+- O dashboard e as perguntas devem carregar automaticamente a partir do backup.
+
+- Caso precise reconectar, utilize sua chave JSON do GCP e aponte para as Views da camada Gold (movielens_analytics).
