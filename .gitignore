@@ -11,3 +11,8 @@
 .idea/
 __pycache__/
 *.log
+
+# Ignorar banco de dados do Metabase (contém chaves de API)
+*.db
+*.db.trace.db
+*.db.lock.db
