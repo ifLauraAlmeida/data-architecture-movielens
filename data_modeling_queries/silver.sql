@@ -8,30 +8,31 @@ SELECT
 FROM `project-dad155f8-631b-42c2-8cc.movielens.movies`;
 
 
-CREATE OR REPLACE TABLE `{{ID DO PROJETO NO GOOGLECLOUD}}.movielens_analytics.fact_ratings`
+CREATE OR REPLACE TABLE `project-dad155f8-631b-42c2-8cc.movielens_analytics.fact_ratings`
 AS
 
-SELECT
-  SAFE_CAST(userId AS INT64) AS user_id,
-  SAFE_CAST(movieId AS INT64) AS movie_id,
-  -- NULLIF transforma o -1.0 em NULL para não estragar suas médias
-  NULLIF(SAFE_CAST(rating AS FLOAT64), -1.0) AS rating,
-  COALESCE(
-    SAFE_CAST(tstamp AS TIMESTAMP),
-    TIMESTAMP_SECONDS(SAFE_CAST(tstamp AS INT64)))
-    AS rating_time,
-  'history' AS source
-FROM `project-dad155f8-631b-42c2-8cc.movielens.user_rating_history`
-UNION ALL
+WITH raw_data AS (
+  SELECT 
+    userId, movieId, rating, tstamp, 'history' AS source 
+  FROM `project-dad155f8-631b-42c2-8cc.movielens.user_rating_history`
+  
+  UNION ALL
+  
+  SELECT 
+    userId, movieId, rating, tstamp, 'additional' AS source 
+  FROM `project-dad155f8-631b-42c2-8cc.movielens.ratings_for_additional_users`
+)
 
 SELECT
   SAFE_CAST(userId AS INT64) AS user_id,
   SAFE_CAST(movieId AS INT64) AS movie_id,
-  NULLIF(SAFE_CAST(rating AS FLOAT64), -1.0) AS rating,
+  SAFE_CAST(rating AS FLOAT64) AS rating,
   COALESCE(
     SAFE_CAST(tstamp AS TIMESTAMP),
-    TIMESTAMP_SECONDS(SAFE_CAST(tstamp AS INT64)))
-    AS rating_time,
-  'additional' AS source
-FROM `project-dad155f8-631b-42c2-8cc.movielens.ratings_for_additional_users`;
-
+    TIMESTAMP_SECONDS(SAFE_CAST(tstamp AS INT64))
+  ) AS rating_time,
+  source
+FROM raw_data
+WHERE 
+  rating IS NOT NULL 
+  AND SAFE_CAST(rating AS FLOAT64) != -1.0;
